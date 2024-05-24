@@ -1,0 +1,76 @@
+import json
+import boto3
+import requests
+
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('EnuDatabase')
+
+def get_next_id():
+    try:
+        response = table.update_item(
+            Key={'ID': 'counter'},
+            UpdateExpression='SET next_id = if_not_exists(next_id, :val)',
+            ExpressionAttributeValues={':val': 1},
+            ReturnValues='UPDATED_NEW'
+        )
+        return response['Attributes']['next_id']
+    except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
+        table.put_item(
+            Item={
+                'ID': 'counter',
+                'next_id': 1
+            }
+        )
+        return 1
+
+def get_data_from_database():
+    response = table.scan()
+    items = response['Items']
+    data = ''
+    for item in items:
+        data += f"ID: {item['ID']}, InputData: {item.get('data', 'N/A')}\n"
+    return data
+
+def lambda_handler(event, context):
+    try:
+        input_data = event.get('data')
+        if not input_data:
+            raise ValueError("No input data provided.")
+
+        unique_id = get_next_id()
+
+        response = table.put_item(
+            Item={
+                'ID': str(unique_id),
+                'data': input_data
+            }
+        )
+
+        db_data = []
+        response = table.scan()  
+        if 'Items' in response:
+            for item in response['Items']:
+                db_data.append(item["data"])
+
+        api_url = "https://lm6fvcvo01.execute-api.eu-north-1.amazonaws.com/EnuFu"
+        payload = {"data": db_data}
+        headers = {"Content-Type": "application/json"}
+        response = requests.post(api_url, data=json.dumps(payload), headers=headers)
+
+        if response.status_code == 200:
+            responseData = response.json()
+            js_code = f'document.getElementById("db_data").value = {json.dumps(responseData["body"])};'
+            print(js_code)
+        else:
+            print("Error sending data to the server")
+            
+        return {
+            'statusCode': 200,
+            'body': json.dumps({'message': f'Data successfully written with ID: {unique_id}', 'db_data': db_data})
+        }
+    except Exception as e:
+        return {
+            'statusCode': 400,
+            'body': json.dumps({'message': f'Error writing data: {str(e)}'})
+        }
+
