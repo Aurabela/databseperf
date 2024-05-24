@@ -52,7 +52,7 @@ def lambda_handler(event, context):
             for item in response['Items']:
                 db_data.append(item["data"])
 
-        api_url = "https://lm6fvcvo01.execute-api.eu-north-1.amazonaws.com/EnuFu"
+        api_url = "gt api"
         payload = {"data": db_data}
         headers = {"Content-Type": "application/json"}
         response = requests.post(api_url, data=json.dumps(payload), headers=headers)
