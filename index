@@ -56,7 +56,7 @@
             body: raw,
             redirect: 'follow'
         };
-        fetch("https://lm6fvcvo01.execute-api.eu-north-1.amazonaws.com/EnuFu", requestOptions)
+        fetch("gt api", requestOptions)
         .then(response => response.text())
         .then(result => {
             var responseData = JSON.parse(result);
