@@ -3,7 +3,7 @@ import boto3
 import requests
 
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('EnuDatabase')
+table = dynamodb.Table('biran')
 
 def get_next_id():
     try:
