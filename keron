@@ -1,0 +1,28 @@
+import json
+import boto3
+import uuid
+
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('EnuDatabase')
+
+def lambda_handler(event, context):
+    try:
+        input_data = event.get('data')
+        if not input_data:
+            raise ValueError("No input data provided.")
+        unique_id = str(uuid.uuid4())
+        response = table.put_item(
+            Item={
+                'ID': unique_id,
+                'InputData': input_data
+            }
+        )
+        return {
+            'statusCode': 200,
+            'body': json.dumps({'message': f'Data successfully written with ID: {unique_id}'})
+        }
+    except Exception as e:
+        return {
+            'statusCode': 400,
+            'body': json.dumps({'message': f'Error writing data: {str(e)}'})
+        }
